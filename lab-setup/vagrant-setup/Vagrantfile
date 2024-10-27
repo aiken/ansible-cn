@@ -1,14 +1,16 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# 检查Vagrant版本是否大于或等于1.6.0
 Vagrant.require_version ">= 1.6.0"
 
+# 定义虚拟机配置数组
 boxes = [
     {
-        :name => "ansible-controller",
-        :eth1 => "192.168.200.10",
-        :mem => "1024",
-        :cpu => "1"
+        :name => "ansible-controller", # 虚拟机名称
+        :eth1 => "192.168.200.10", # 私有网络IP
+        :mem => "1024", # 内存大小
+        :cpu => "1" # CPU核心数
     },
     {
         :name => "ansible-node1",
@@ -24,22 +26,33 @@ boxes = [
     }
 ]
 
+# 配置Vagrant
 Vagrant.configure(2) do |config|
 
+
+  # 设置虚拟机镜像
   config.vm.box = "centos/7"
+  # 遍历虚拟机配置数组
   boxes.each do |opts|
+    # 定义虚拟机
     config.vm.define opts[:name] do |config|
+      # 设置虚拟机主机名
       config.vm.hostname = opts[:name]
+      # 配置VMware Fusion提供者
       config.vm.provider "vmware_fusion" do |v|
-        v.vmx["memsize"] = opts[:mem]
-        v.vmx["numvcpus"] = opts[:cpu]
+        v.vmx["memsize"] = opts[:mem] # 设置内存大小
+        v.vmx["numvcpus"] = opts[:cpu] # 设置CPU核心数
       end
+      # 配置VirtualBox提供者
       config.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", opts[:mem]]
-        v.customize ["modifyvm", :id, "--cpus", opts[:cpu]]
+        v.customize ["modifyvm", :id, "--memory", opts[:mem]] # 设置内存大小
+        v.customize ["modifyvm", :id, "--cpus", opts[:cpu]] # 设置CPU核心数
       end
+      # 配置私有网络
       config.vm.network :private_network, ip: opts[:eth1]
     end
+
   end
-  config.vm.provision "shell", privileged: false, path: "./setup.sh"
+  # 配置虚拟机初始化脚本
+  config.vm.provision "shell", privileged: true, path: "./setup.sh"
 end
