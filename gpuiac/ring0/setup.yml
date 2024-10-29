@@ -1,0 +1,34 @@
+---
+- name: 设置基础运维环境
+  hosts: all
+  become: yes
+  tasks:
+    - name: 安装 MAAS
+      apt:
+        name: maas
+        state: present
+
+    - name: 安装 Ansible
+      apt:
+        name: ansible
+        state: present
+
+    - name: 安装 AWX
+      shell: |
+        # 安装 AWX 的命令
+        echo "安装 AWX"
+
+    - name: 安装 JumpServer
+      shell: |
+        # 安装 JumpServer 的命令
+        echo "安装 JumpServer"
+
+    - name: 安装 夜莺监控系统
+      shell: |
+        # 安装夜莺监控的命令
+        echo "安装夜莺监控"
+
+    - name: 安装 Kubernetes
+      shell: |
+        # 安装 Kubernetes 的命令
+        echo "安装 Kubernetes"
