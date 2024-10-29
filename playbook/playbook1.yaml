@@ -1,25 +1,33 @@
-- hosts: webservers
-  remote_user: root
+# 第一个 play - 配置 Web 服务器
+- hosts: webservers   # 指定目标主机组为 webservers
+  remote_user: root   # 使用 root 用户执行任务
 
   tasks:
+  # 确保 Apache 安装的是最新版本
   - name: ensure apache is at the latest version
-    yum:
-      name: httpd
-      state: latest
-  - name: write the apache config file
-    template:
-      src: /srv/httpd.j2
-      dest: /etc/httpd.conf
+    yum:              # 使用 yum 包管理器
+      name: httpd     # 安装 httpd 包
+      state: latest   # 确保是最新版本
 
-- hosts: databases
-  remote_user: root
+  # 配置 Apache 的配置文件
+  - name: write the apache config file
+    template:         # 使用模板模块
+      src: /srv/httpd.j2    # 模板源文件路径
+      dest: /etc/httpd.conf # 目标配置文件路径
+
+# 第二个 play - 配置数据库服务器
+- hosts: databases    # 指定目标主机组为 databases
+  remote_user: root   # 使用 root 用户执行任务
 
   tasks:
+  # 确保 PostgreSQL 安装的是最新版本
   - name: ensure postgresql is at the latest version
-    yum:
-      name: postgresql
-      state: latest
+    yum:                # 使用 yum 包管理器
+      name: postgresql  # 安装 postgresql 包
+      state: latest     # 确保是最新版本
+
+  # 确保 PostgreSQL 服务已启动
   - name: ensure that postgresql is started
-    service:
-      name: postgresql
-      state: started
+    service:            # 使用服务模块
+      name: postgresql  # 服务名称为 postgresql
+      state: started    # 确保服务处于启动状态

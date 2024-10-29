@@ -1,12 +1,91 @@
 ---
 - name: 设置基础运维环境
-  hosts: all
+  hosts: ring0
   become: yes
+  vars:
+    maas_db_user: maas
+    maas_db_pass: c44vDwCq!N7
+    maas_db_name: maas
+    maas_admin_profile: admin
+    maas_admin_email: aiken.qi@gmail.com
+    hostname: localhost  # 根据实际情况设置
+    maas_url: http://localhost:5240/MAAS
+    ssh_key: "your-ssh-key"
+    fabric_id: 1
+    primary_rack_controller: rack-controller-1
+    subnet_cidr: 192.168.0.0/24
+    my_gateway: 192.168.0.1
+
+    
   tasks:
     - name: 安装 MAAS
+      shell: |
+        # 从 snap 安装 MAAS
+        snap install --channel=3.5/stable maas
+# 安装后设置 (生产环境)
+    - name: 禁用系统默认的 NTP 服务
+      systemd:
+        name: systemd-timesyncd
+        state: stopped
+        enabled: no
+
+    - name: 安装 PostgreSQL
       apt:
-        name: maas
+        name: postgresql
         state: present
+
+    - name: 创建 MAAS 数据库用户
+      become_user: postgres
+      postgresql_user:
+        name: "{{ maas_db_user }}"
+        password: "{{ maas_db_pass }}"
+        encrypted: yes
+        state: present
+
+    - name: 创建 MAAS 数据库
+      become_user: postgres
+      postgresql_db:
+        name: "{{ maas_db_name }}"
+        owner: "{{ maas_db_user }}"
+        state: present
+
+    - name: 配置 PostgreSQL 访问权限
+      lineinfile:
+        path: /etc/postgresql/14/main/pg_hba.conf
+        line: "host    {{ maas_db_name }}    {{ maas_db_user }}    0/0     md5"
+        state: present
+      notify: restart postgresql
+
+    - name: 初始化 MAAS
+      shell: |
+        maas init region+rack --database-uri "postgres://{{ maas_db_user }}:{{ maas_db_pass }}@{{ hostname }}/{{ maas_db_name }}"
+
+    - name: 创建 MAAS 管理员用户
+      shell: |
+        maas create admin --username={{ maas_admin_profile }} --email={{ maas_admin_email }}
+    - name: 检查 MAAS 服务状态
+      shell: |
+        sudo maas status
+    - name: 登录 MAAS
+      shell: |
+        maas login {{ maas_admin_profile }} {{ maas_url }} $(cat api-key-file)
+
+    - name: 配置 DNS
+      shell: |
+        maas {{ maas_admin_profile }} maas set-config name=upstream_dns value="8.8.8.8"
+
+    - name: 添加 SSH 密钥
+      shell: |
+        maas {{ maas_admin_profile }} sshkeys create "key={{ ssh_key }}"
+    - name: 启用 DHCP
+      shell: |
+        maas {{ maas_admin_profile }} vlan update {{ fabric_id }} untagged dhcp_on=True primary_rack={{ primary_rack_controller }}
+
+    - name: 设置默认网关
+      shell: |
+        maas {{ maas_admin_profile }} subnet update {{ subnet_cidr }} gateway_ip={{ my_gateway }}
+
+
 
     - name: 安装 Ansible
       apt:
@@ -32,3 +111,9 @@
       shell: |
         # 安装 Kubernetes 的命令
         echo "安装 Kubernetes"
+
+  handlers:
+    - name: restart postgresql
+      service:
+        name: postgresql
+        state: restarted

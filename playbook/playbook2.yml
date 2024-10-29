@@ -1,9 +1,10 @@
-- hosts: web1
-  name: play-test
-  tasks:
-  - name: check host connection
-    setup:
-      gather_subset:
-        - '!all'
-        - '!any'
-        - facter
+# 定义一个新的 play
+- hosts: web1                # 指定目标主机组为 web1,对应 inventory.ini 中定义的主机组
+  name: play-test           # 为这个 play 指定一个名称,方便识别和调试
+  tasks:                    # 定义要执行的任务列表
+  - name: check host connection    # 任务名称:检查主机连接状态
+    setup:                  # 使用 setup 模块收集目标主机的系统信息
+      gather_subset:        # 配置要收集的信息子集
+        - '!all'           # 不收集所有信息(使用!表示排除)
+        - '!any'           # 不收集任何默认信息
+        - facter           # 只收集 facter 提供的系统信息
