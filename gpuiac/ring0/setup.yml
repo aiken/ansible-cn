@@ -18,6 +18,16 @@
 
     
   tasks:
+    - name: 更新 apt 包列表
+      shell:  apt update
+
+    - name: 安装 python3-pexpect
+      shell: sudo apt install python3-pexpect
+
+    - name: 安装 python3-psycopg2
+      shell:  apt install python3-psycopg2
+
+
     - name: 安装 MAAS
       shell: |
         # 从 snap 安装 MAAS
@@ -56,9 +66,18 @@
         state: present
       notify: restart postgresql
 
+
+
+
     - name: 初始化 MAAS
-      shell: |
-        maas init region+rack --database-uri "postgres://{{ maas_db_user }}:{{ maas_db_pass }}@{{ hostname }}/{{ maas_db_name }}"
+      expect:
+        command: maas init region+rack --database-uri "postgres://{{ maas_db_user }}:{{ maas_db_pass }}@{{ hostname }}/{{ maas_db_name }}"
+        responses:
+          "Password:": "\r"
+          "Are you sure you want to initialize again (yes/no) [default=no]?": "\r"
+        timeout: 60
+        echo: True
+      ignore_errors: yes
 
     - name: 创建 MAAS 管理员用户
       shell: |
